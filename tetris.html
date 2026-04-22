@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>テトリス改</title>
+
+<style>
+body {
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+
+#container {
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    gap:20px;
+    margin-top:20px;
+}
+
+canvas {
+    background:black;
+}
+
+.side {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>テトリス改</h1>
+
+<div id="container">
+
+    <!-- HOLD -->
+    <div class="side">
+        <div>
+            <h3>HOLD</h3>
+            <canvas id="hold" width="120" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <canvas id="game" width="300" height="600"></canvas>
+
+    <!-- NEXT -->
+    <div class="side">
+        <div>
+            <h3>NEXT</h3>
+            <canvas id="next" width="120" height="120"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<p id="score">SCORE: 0</p>
+
+<script>
+// =====================
+// 設定
+// =====================
+const COLS = 10;
+const ROWS = 20;
+const SIZE = 30;
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const holdCanvas = document.getElementById("hold");
+const holdCtx = holdCanvas.getContext("2d");
+
+const nextCanvas = document.getElementById("next");
+const nextCtx = nextCanvas.getContext("2d");
+
+// =====================
+// テトリミノ（正しい7種）
+// =====================
+const SHAPES = [
+    {shape:[[0,0],[1,0],[2,0],[4,0]], color:"cyan"},     // I
+    {shape:[[0,0],[1,0],[0,1],[1,1],[2,0]], color:"yellow"},   // O
+    {shape:[[0,0],[1,0],[2,0],[1,2]], color:"purple"},   // T
+    {shape:[[0,0],[0,1],[1,1],[0,2],[0,3]], color:"orange"},   // L
+    {shape:[[2,0],[0,1],[1,1],[2,1],[3,1]], color:"blue"},     // J
+    {shape:[[1,0],[2,0],[0,1],[1,1],[1,2]], color:"green"},    // S
+    {shape:[[0,0],[1,0],[1,1],[2,1],[2,2]], color:"red"}       // Z
+];
+
+
+// =====================
+// 状態
+// =====================
+let board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
+
+let current, next, hold = null;
+let holdUsed = false;
+
+let x=3, y=0;
+let score = 0;
+
+// =====================
+// 初期化
+// =====================
+function randomPiece(){
+    return JSON.parse(JSON.stringify(SHAPES[Math.floor(Math.random()*7)]));
+}
+
+next = randomPiece();
+spawn();
+
+// =====================
+// 生成
+// =====================
+function spawn(){
+    current = next;
+    next = randomPiece();
+
+    x = 3;
+    y = 0;
+
+    holdUsed = false;
+
+    if(collision(0,0,current.shape)){
+        alert("GAME OVER");
+        board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
+        score = 0;
+    }
+}
+
+// =====================
+// 描画
+// =====================
+function draw(){
+    ctx.clearRect(0,0,300,600);
+
+    // board
+    for(let y=0;y<ROWS;y++){
+        for(let x=0;x<COLS;x++){
+            if(board[y][x]){
+                drawBlock(ctx,x,y,board[y][x]);
+            }
+        }
+    }
+
+    // current
+    current.shape.forEach(b=>{
+        drawBlock(ctx,x+b[0],y+b[1],current.color);
+    });
+
+    drawMini(holdCtx, hold);
+    drawMini(nextCtx, next);
+}
+
+function drawBlock(ctx,x,y,color){
+    ctx.fillStyle=color;
+    ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE);
+    ctx.strokeStyle="black";
+    ctx.strokeRect(x*SIZE,y*SIZE,SIZE,SIZE);
+}
+
+// =====================
+// mini表示（修正済み）
+// =====================
+function drawMini(ctx,piece){
+    ctx.clearRect(0,0,120,120);
+    if(!piece) return;
+
+    ctx.fillStyle=piece.color;
+
+    piece.shape.forEach(b=>{
+        ctx.fillRect((b[0]+1)*20,(b[1]+1)*20,20,20);
+    });
+}
+
+// =====================
+// 衝突
+// =====================
+function collision(dx,dy,shape){
+    return shape.some(b=>{
+        let nx = x+b[0]+dx;
+        let ny = y+b[1]+dy;
+
+        return (
+            nx<0 || nx>=COLS || ny>=ROWS ||
+            (ny>=0 && board[ny][nx])
+        );
+    });
+}
+
+// =====================
+// 固定
+// =====================
+function merge(){
+    current.shape.forEach(b=>{
+        board[y+b[1]][x+b[0]] = current.color;
+    });
+}
+
+// =====================
+// 行消し
+// =====================
+function clearLines(){
+    let lines = 0;
+
+    board = board.filter(row=>{
+        if(row.some(v=>!v)){
+            return true;
+        }else{
+            lines++;
+            return false;
+        }
+    });
+
+    while(board.length<ROWS){
+        board.unshift(Array(COLS).fill(0));
+    }
+
+    // ★ここでまとめて加算（重要）
+    if(lines === 1) score += 100;
+    if(lines === 2) score += 300;
+    if(lines === 3) score += 500;
+    if(lines >= 4) score += 800;
+
+    document.getElementById("score").innerText = "SCORE: " + score;
+}
+// =====================
+// 落下
+// =====================
+function drop(){
+    if(!collision(0,1,current.shape)){
+        y++;
+    }else{
+        merge();
+        clearLines();
+        spawn();
+    }
+    draw();
+}
+
+setInterval(drop,500);
+
+// =====================
+// 操作
+// =====================
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft" && !collision(-1,0,current.shape)) x--;
+    if(e.key==="ArrowRight" && !collision(1,0,current.shape)) x++;
+
+    if(e.key==="ArrowDown") drop();
+
+    // 回転
+    if(e.key==="ArrowUp"){
+        let rotated = current.shape.map(b=>[-b[1],b[0]]);
+        if(!collision(0,0,rotated)) current.shape = rotated;
+    }
+
+    // HOLD
+    if(e.key==="c"){
+        if(holdUsed) return;
+
+        if(!hold){
+            hold = current;
+            spawn();
+        }else{
+            [hold,current] = [current,hold];
+            x=3; y=0;
+        }
+        holdUsed = true;
+    }
+
+    draw();
+});
+
+// 初回描画
+draw();
+</script>
+
+</body>
+</html>
