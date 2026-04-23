@@ -68,14 +68,14 @@ p {
     font-size:12px;
 }
 
-/* ★ ボタン固定 */
+/* 操作ボタン（最初は非表示） */
 #controls {
+    display:none;
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     background:#111;
-    display:flex;
     flex-wrap:wrap;
     justify-content:center;
     padding:5px 0;
@@ -116,7 +116,7 @@ button {
 
 <div id="container">
 
-```
+
 <div id="topPanel">
     <div>
         <h3>HOLD</h3>
@@ -130,7 +130,6 @@ button {
 </div>
 
 <canvas id="game"></canvas>
-```
 
 </div>
 
@@ -138,7 +137,7 @@ button {
 
 </div>
 
-<!-- 操作ボタン -->
+<!-- ★ 操作ボタン -->
 
 <div id="controls">
     <button onclick="moveLeft()">←</button>
@@ -164,14 +163,12 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-/* ★ サイズ計算（ボタン分を引く） */
+/* サイズ計算 */
 function calculateSize(){
-
-    const controls = document.getElementById("controls");
-    const controlsHeight = controls.getBoundingClientRect().height;
-
     const maxWidth = window.innerWidth * 0.95;
-    const maxHeight = window.innerHeight - controlsHeight - 20;
+    const reservedHeight = 200;
+
+    const maxHeight = window.innerHeight - reservedHeight;
 
     SIZE = Math.floor(Math.min(
         maxWidth / COLS,
@@ -228,11 +225,13 @@ function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
 
+    // ★ ボタン表示
+    document.getElementById("controls").style.display = "flex";
+
     gameStarted = true;
     resetGame();
     spawn();
 
-    /* ★ 描画後にサイズ確定 */
     requestAnimationFrame(() => {
         calculateSize();
         applyCanvasSize();
@@ -242,7 +241,15 @@ function startGame(){
 
 function gameOver(){
     alert("GAME OVER");
-    location.reload();
+
+    gameStarted = false;
+
+    // 画面切り替え
+    document.getElementById("gameScreen").style.display = "none";
+    document.getElementById("startScreen").style.display = "block";
+
+    // ボタン非表示
+    document.getElementById("controls").style.display = "none";
 }
 
 function randomPiece(){
@@ -394,3 +401,4 @@ setInterval(()=>{
 
 </body>
 </html>
+
