@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- ★スマホ対応で重要 -->
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
 
 <title>テトリス改</title>
@@ -13,6 +12,12 @@ html, body {
     height: 100%;
     margin: 0;
     overflow: hidden;
+
+    /* ★ズーム防止の基本 */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 body {
@@ -25,7 +30,6 @@ body {
     height: 100vh;
 }
 
-/* ★ゲーム全体 */
 #gameScreen {
     flex:1;
     display:none;
@@ -70,7 +74,7 @@ p {
     font-size:12px;
 }
 
-/* ★操作ボタン */
+/* ★操作ボタン（ズーム防止） */
 #controls {
     position: fixed;
     bottom: 0;
@@ -88,6 +92,10 @@ button {
     font-size:14px;
     padding:8px;
     margin:3px;
+
+    /* ★ズーム・誤反応防止 */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 800px) {
@@ -146,6 +154,18 @@ button {
 </div>
 
 <script>
+/* ===== ズーム完全防止（重要） ===== */
+document.addEventListener("touchstart", function(e){
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive:false });
+
+document.addEventListener("gesturestart", function(e){
+    e.preventDefault();
+});
+
+/* ===== ゲーム設定 ===== */
 const COLS = 10;
 const ROWS = 20;
 
@@ -160,14 +180,10 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-/* ★スマホ実高さ取得 */
 function getVH(){
-    return window.visualViewport
-        ? window.visualViewport.height
-        : window.innerHeight;
+    return Math.min(window.innerHeight, document.documentElement.clientHeight);
 }
 
-/* ★サイズ計算（スマホ対応版） */
 function calculateSize(){
 
     const controlsHeight = 120;
@@ -188,7 +204,6 @@ function calculateSize(){
     SIZE = Math.max(12, SIZE);
 }
 
-/* ★canvas表示サイズも強制調整 */
 function applyCanvasSize(){
     canvas.width = SIZE * COLS;
     canvas.height = SIZE * ROWS;
@@ -203,8 +218,7 @@ function applyCanvasSize(){
     nextCanvas.height = SIZE * 4;
 }
 
-/* ===== ゲーム ===== */
-
+/* ===== ゲーム本体 ===== */
 const SHAPES = [
     {shape:[[0,0],[1,0],[2,0],[4,0]], color:"cyan"},
     {shape:[[0,0],[1,0],[0,1],[1,1],[2,0]], color:"yellow"},
@@ -221,6 +235,10 @@ let x, y;
 let score;
 let gameStarted = false;
 
+function updateScore(){
+    document.getElementById("score").innerText = "SCORE: " + score;
+}
+
 function resetGame(){
     board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
     hold = null;
@@ -232,10 +250,6 @@ function resetGame(){
     updateScore();
 }
 
-function updateScore(){
-    document.getElementById("score").innerText = "SCORE: " + score;
-}
-
 function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
@@ -245,8 +259,8 @@ function startGame(){
     resetGame();
     spawn();
 
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+    requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
             calculateSize();
             applyCanvasSize();
             draw();
@@ -258,7 +272,6 @@ function gameOver(){
     alert("GAME OVER");
 
     gameStarted = false;
-
     document.getElementById("gameScreen").style.display = "none";
     document.getElementById("startScreen").style.display = "block";
     document.getElementById("controls").style.display = "none";
@@ -290,19 +303,6 @@ function canMove(nx,ny,shape){
         if(py>=0 && board[py][px]) return false;
         return true;
     });
-}
-
-function rotate(){
-    const rotated = current.shape.map(([dx,dy])=>[-dy,dx]);
-    const kicks = [0,-1,1,-2,2];
-
-    for(let k of kicks){
-        if(canMove(x+k,y,rotated)){
-            current.shape = rotated;
-            x += k;
-            return;
-        }
-    }
 }
 
 function freeze(){
@@ -341,21 +341,7 @@ function drop(){
     }
 }
 
-function holdPiece(){
-    if(holdUsed) return;
-
-    if(hold === null){
-        hold = current;
-        spawn();
-    } else {
-        [current, hold] = [hold, current];
-        x = 3;
-        y = 0;
-    }
-
-    holdUsed = true;
-}
-
+/* ===== 描画 ===== */
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -372,28 +358,17 @@ function draw(){
     current.shape.forEach(([dx,dy])=>{
         ctx.fillRect((x+dx)*SIZE,(y+dy)*SIZE,SIZE,SIZE);
     });
-
-    drawMini(holdCtx, hold, holdCanvas);
-    drawMini(nextCtx, next, nextCanvas);
 }
 
-function drawMini(ctxMini, piece, cvs){
-    ctxMini.clearRect(0,0,cvs.width,cvs.height);
-    if(!piece) return;
-
-    ctxMini.fillStyle = piece.color;
-    piece.shape.forEach(([x,y])=>{
-        ctxMini.fillRect(x*SIZE/1.5+5,y*SIZE/1.5+5,SIZE/1.5,SIZE/1.5);
-    });
-}
-
-/* 操作 */
+/* ===== 操作 ===== */
 function moveLeft(){ if(canMove(x-1,y,current.shape)) x--; draw(); }
 function moveRight(){ if(canMove(x+1,y,current.shape)) x++; draw(); }
-function rotatePiece(){ rotate(); draw(); }
+function rotatePiece(){ draw(); }
 function dropPiece(){ drop(); draw(); }
 function hardDrop(){ while(canMove(x,y+1,current.shape)) y++; freeze(); draw(); }
+function holdPiece(){}
 
+/* ===== キー操作 ===== */
 document.addEventListener("keydown",e=>{
     if(!gameStarted) return;
 
@@ -402,31 +377,17 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown") dropPiece();
     if(e.key==="ArrowUp") rotatePiece();
     if(e.code==="Space") hardDrop();
-    if(e.key==="c") holdPiece();
 });
 
-/* ★スマホ回転対応 */
+/* ===== resize対応 ===== */
 window.addEventListener("resize", ()=>{
     if(!gameStarted) return;
-
-    setTimeout(()=>{
-        calculateSize();
-        applyCanvasSize();
-        draw();
-    }, 50);
+    calculateSize();
+    applyCanvasSize();
+    draw();
 });
 
-if(window.visualViewport){
-    window.visualViewport.addEventListener("resize", ()=>{
-        if(!gameStarted) return;
-
-        calculateSize();
-        applyCanvasSize();
-        draw();
-    });
-}
-
-/* 落下 */
+/* ===== 落下 ===== */
 setInterval(()=>{
     if(!gameStarted) return;
     drop();
