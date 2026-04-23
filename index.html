@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ★スマホ対応で重要 -->
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
+
 <title>テトリス改</title>
 
 <style>
@@ -20,13 +22,18 @@ body {
     display:flex;
     flex-direction:column;
     align-items:center;
+    height: 100vh;
 }
 
+/* ★ゲーム全体 */
 #gameScreen {
     flex:1;
-    display:flex;
+    display:none;
     flex-direction:column;
+    justify-content:center;
     align-items:center;
+    width: 100%;
+    height: 100vh;
 }
 
 #container {
@@ -48,11 +55,9 @@ body {
     align-items:center;
 }
 
-#hold { border:2px solid cyan; }
-#next { border:2px solid orange; }
-
 canvas {
     background:black;
+    display:block;
 }
 
 h1 {
@@ -65,13 +70,14 @@ p {
     font-size:12px;
 }
 
-/* ★ ボタン（JSで表示制御） */
+/* ★操作ボタン */
 #controls {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     background:#111;
+    display:none;
     flex-wrap:wrap;
     justify-content:center;
     padding:5px 0;
@@ -96,7 +102,6 @@ button {
     }
 }
 </style>
-
 </head>
 
 <body>
@@ -107,11 +112,10 @@ button {
     <button onclick="startGame()">START</button>
 </div>
 
-<div id="gameScreen" style="display:none;">
+<div id="gameScreen">
 
 <div id="container">
 
-```
 <div id="topPanel">
     <div>
         <h3>HOLD</h3>
@@ -125,7 +129,6 @@ button {
 </div>
 
 <canvas id="game"></canvas>
-```
 
 </div>
 
@@ -133,9 +136,7 @@ button {
 
 </div>
 
-<!-- ★ 最初は非表示 -->
-
-<div id="controls" style="display:none;">
+<div id="controls">
     <button onclick="moveLeft()">←</button>
     <button onclick="rotatePiece()">⟳</button>
     <button onclick="moveRight()">→</button>
@@ -159,26 +160,41 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-/* サイズ計算 */
+/* ★スマホ実高さ取得 */
+function getVH(){
+    return window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+}
+
+/* ★サイズ計算（スマホ対応版） */
 function calculateSize(){
 
-    const controls = document.getElementById("controls");
-    const controlsHeight = controls.getBoundingClientRect().height || 120;
+    const controlsHeight = 120;
+    const headerHeight = 40;
+    const scoreHeight = 30;
 
+    const usedHeight = controlsHeight + headerHeight + scoreHeight + 40;
+
+    const vh = getVH();
     const maxWidth = window.innerWidth * 0.95;
-    const maxHeight = window.innerHeight - controlsHeight - 20;
+    const maxHeight = vh - usedHeight;
 
     SIZE = Math.floor(Math.min(
         maxWidth / COLS,
         maxHeight / ROWS
     ));
 
-    SIZE = Math.max(15, SIZE);
+    SIZE = Math.max(12, SIZE);
 }
 
+/* ★canvas表示サイズも強制調整 */
 function applyCanvasSize(){
     canvas.width = SIZE * COLS;
     canvas.height = SIZE * ROWS;
+
+    canvas.style.width = (SIZE * COLS) + "px";
+    canvas.style.height = (SIZE * ROWS) + "px";
 
     holdCanvas.width = SIZE * 4;
     holdCanvas.height = SIZE * 4;
@@ -187,7 +203,8 @@ function applyCanvasSize(){
     nextCanvas.height = SIZE * 4;
 }
 
-/* ゲーム */
+/* ===== ゲーム ===== */
+
 const SHAPES = [
     {shape:[[0,0],[1,0],[2,0],[4,0]], color:"cyan"},
     {shape:[[0,0],[1,0],[0,1],[1,1],[2,0]], color:"yellow"},
@@ -222,14 +239,12 @@ function updateScore(){
 function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
-
     document.getElementById("controls").style.display = "flex";
 
     gameStarted = true;
     resetGame();
     spawn();
 
-    /* ★ 2フレーム待ってからサイズ確定 */
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             calculateSize();
@@ -246,7 +261,6 @@ function gameOver(){
 
     document.getElementById("gameScreen").style.display = "none";
     document.getElementById("startScreen").style.display = "block";
-
     document.getElementById("controls").style.display = "none";
 }
 
@@ -359,12 +373,12 @@ function draw(){
         ctx.fillRect((x+dx)*SIZE,(y+dy)*SIZE,SIZE,SIZE);
     });
 
-    drawMini(holdCtx, hold);
-    drawMini(nextCtx, next);
+    drawMini(holdCtx, hold, holdCanvas);
+    drawMini(nextCtx, next, nextCanvas);
 }
 
-function drawMini(ctxMini, piece){
-    ctxMini.clearRect(0,0,holdCanvas.width,holdCanvas.height);
+function drawMini(ctxMini, piece, cvs){
+    ctxMini.clearRect(0,0,cvs.width,cvs.height);
     if(!piece) return;
 
     ctxMini.fillStyle = piece.color;
@@ -373,6 +387,7 @@ function drawMini(ctxMini, piece){
     });
 }
 
+/* 操作 */
 function moveLeft(){ if(canMove(x-1,y,current.shape)) x--; draw(); }
 function moveRight(){ if(canMove(x+1,y,current.shape)) x++; draw(); }
 function rotatePiece(){ rotate(); draw(); }
@@ -390,20 +405,34 @@ document.addEventListener("keydown",e=>{
     if(e.key==="c") holdPiece();
 });
 
-/* 画面回転対応 */
+/* ★スマホ回転対応 */
 window.addEventListener("resize", ()=>{
     if(!gameStarted) return;
 
-    calculateSize();
-    applyCanvasSize();
-    draw();
+    setTimeout(()=>{
+        calculateSize();
+        applyCanvasSize();
+        draw();
+    }, 50);
 });
 
+if(window.visualViewport){
+    window.visualViewport.addEventListener("resize", ()=>{
+        if(!gameStarted) return;
+
+        calculateSize();
+        applyCanvasSize();
+        draw();
+    });
+}
+
+/* 落下 */
 setInterval(()=>{
     if(!gameStarted) return;
     drop();
     draw();
 },500);
+
 </script>
 
 </body>
