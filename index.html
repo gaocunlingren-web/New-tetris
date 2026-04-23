@@ -22,14 +22,15 @@ body {
     align-items:center;
 }
 
+/* ゲーム画面 */
 #gameScreen {
     flex:1;
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
 }
 
+/* メイン配置 */
 #container {
     display:flex;
     justify-content:center;
@@ -37,6 +38,7 @@ body {
     gap:10px;
 }
 
+/* HOLD / NEXT */
 #topPanel {
     display:flex;
     flex-direction:column;
@@ -49,11 +51,6 @@ body {
     align-items:center;
 }
 
-#topPanel h3 {
-    margin:3px;
-    font-size:14px;
-}
-
 #hold { border:2px solid cyan; }
 #next { border:2px solid orange; }
 
@@ -62,25 +59,31 @@ canvas {
 }
 
 h1 {
-    margin:3px;
+    margin:5px;
     font-size:16px;
 }
 
 p {
-    margin:2px;
-    font-size:11px;
+    margin:3px;
+    font-size:12px;
 }
 
+/* ★ ボタン固定（重要） */
 #controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background:#111;
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
-    max-width:320px;
+    padding:5px 0;
 }
 
 button {
-    font-size:12px;
-    padding:6px;
+    font-size:14px;
+    padding:8px;
     margin:3px;
 }
 
@@ -132,6 +135,10 @@ button {
 
 <p id="score">SCORE: 0</p>
 
+</div>
+
+<!-- ★ 常に表示される操作ボタン -->
+
 <div id="controls">
     <button onclick="moveLeft()">←</button>
     <button onclick="rotatePiece()">⟳</button>
@@ -139,8 +146,6 @@ button {
     <button onclick="dropPiece()">↓</button>
     <button onclick="hardDrop()">⤓</button>
     <button onclick="holdPiece()">H</button>
-</div>
-
 </div>
 
 <script>
@@ -158,21 +163,12 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-/* ===== サイズ計算（描画後に実行） ===== */
+/* サイズ計算 */
 function calculateSize(){
-
-    const controls = document.getElementById("controls");
-    const score = document.getElementById("score");
-    const title = document.querySelector("h1");
-
-    const controlsHeight = controls.getBoundingClientRect().height;
-    const scoreHeight = score.getBoundingClientRect().height;
-    const titleHeight = title.getBoundingClientRect().height;
-
-    const uiHeight = controlsHeight + scoreHeight + titleHeight + 60;
-
     const maxWidth = window.innerWidth * 0.95;
-    const maxHeight = window.innerHeight - uiHeight;
+
+    // ★ ボタン分を最初から引く
+    const maxHeight = window.innerHeight - 180;
 
     SIZE = Math.floor(Math.min(
         maxWidth / COLS,
@@ -193,8 +189,7 @@ function applyCanvasSize(){
     nextCanvas.height = SIZE * 4;
 }
 
-/* ===== ゲーム ===== */
-
+/* ゲーム */
 const SHAPES = [
     {shape:[[0,0],[1,0],[2,0],[4,0]], color:"cyan"},
     {shape:[[0,0],[1,0],[0,1],[1,1],[2,0]], color:"yellow"},
@@ -230,16 +225,13 @@ function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
 
+    calculateSize();
+    applyCanvasSize();
+
     gameStarted = true;
     resetGame();
     spawn();
-
-    /* ★ 描画後にサイズ確定 */
-    requestAnimationFrame(() => {
-        calculateSize();
-        applyCanvasSize();
-        draw();
-    });
+    draw();
 }
 
 function gameOver(){
