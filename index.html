@@ -54,13 +54,8 @@ body {
     font-size:14px;
 }
 
-#hold {
-    border:2px solid cyan;
-}
-
-#next {
-    border:2px solid orange;
-}
+#hold { border:2px solid cyan; }
+#next { border:2px solid orange; }
 
 canvas {
     background:black;
@@ -76,9 +71,16 @@ p {
     font-size:11px;
 }
 
+#controls {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    max-width:300px;
+}
+
 button {
-    font-size:14px;
-    padding:8px;
+    font-size:12px;
+    padding:6px;
     margin:3px;
 }
 
@@ -147,14 +149,18 @@ const ROWS = 20;
 
 let SIZE;
 
-// ★ サイズを後で計算する
 function calculateSize(){
-    const controlsHeight = document.getElementById("controls").offsetHeight;
-    const scoreHeight = document.getElementById("score").offsetHeight;
-    const titleHeight = document.querySelector("h1").offsetHeight;
 
-    // 上下UI合計
-    const uiHeight = controlsHeight + scoreHeight + titleHeight + 40;
+    const controls = document.getElementById("controls");
+    const score = document.getElementById("score");
+    const title = document.querySelector("h1");
+
+    const controlsHeight = controls.offsetHeight || 80;
+    const scoreHeight = score.offsetHeight || 30;
+    const titleHeight = title.offsetHeight || 30;
+
+    // ★ 余白込みでしっかり確保
+    const uiHeight = controlsHeight + scoreHeight + titleHeight + 60;
 
     const maxWidth = window.innerWidth * 0.95;
     const maxHeight = window.innerHeight - uiHeight;
@@ -163,6 +169,9 @@ function calculateSize(){
         maxWidth / COLS,
         maxHeight / ROWS
     ));
+
+    // 最低サイズ保証
+    SIZE = Math.max(15, SIZE);
 }
 
 const canvas = document.getElementById("game");
@@ -174,17 +183,8 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-// 初期サイズ（仮）
-calculateSize();
-
-canvas.width = SIZE * COLS;
-canvas.height = SIZE * ROWS;
-
-holdCanvas.width = SIZE * 4;
-holdCanvas.height = SIZE * 4;
-
-nextCanvas.width = SIZE * 4;
-nextCanvas.height = SIZE * 4;
+// 初期仮サイズ
+SIZE = 20;
 
 const SHAPES = [
     {shape:[[0,0],[1,0],[2,0],[4,0]], color:"cyan"},
@@ -201,6 +201,17 @@ let holdUsed;
 let x, y;
 let score;
 let gameStarted = false;
+
+function applyCanvasSize(){
+    canvas.width = SIZE * COLS;
+    canvas.height = SIZE * ROWS;
+
+    holdCanvas.width = SIZE * 4;
+    holdCanvas.height = SIZE * 4;
+
+    nextCanvas.width = SIZE * 4;
+    nextCanvas.height = SIZE * 4;
+}
 
 function resetGame(){
     board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
@@ -221,19 +232,16 @@ function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
 
-    calculateSize(); // ←ここで再計算
-
-    canvas.width = SIZE * COLS;
-    canvas.height = SIZE * ROWS;
-    holdCanvas.width = SIZE * 4;
-    holdCanvas.height = SIZE * 4;
-    nextCanvas.width = SIZE * 4;
-    nextCanvas.height = SIZE * 4;
+    // ★ 描画後にサイズ計算（ここ重要）
+    setTimeout(()=>{
+        calculateSize();
+        applyCanvasSize();
+        draw();
+    }, 50);
 
     gameStarted = true;
     resetGame();
     spawn();
-    draw();
 }
 
 function gameOver(){
@@ -391,4 +399,3 @@ setInterval(()=>{
 
 </body>
 </html>
-
