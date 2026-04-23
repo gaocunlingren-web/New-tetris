@@ -29,36 +29,51 @@ canvas {
     flex-direction:column;
     gap:20px;
 }
+
+#startScreen {
+    margin-top: 100px;
+}
+
+button {
+    font-size: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
 </style>
 </head>
 
 <body>
 
 <h1>テトリス改</h1>
-<p>← → 移動 / ↑ 回転 / ↓ 加速 / Space ハードドロップ / C HOLD</p>
 
-<div id="container">
-
-    <div class="side">
-        <h3>HOLD</h3>
-        <canvas id="hold" width="120" height="120"></canvas>
-    </div>
-
-    <canvas id="game" width="300" height="600"></canvas>
-
-    <div class="side">
-        <h3>NEXT</h3>
-        <canvas id="next" width="120" height="120"></canvas>
-    </div>
-
+<!-- スタート画面 -->
+<div id="startScreen">
+    <h2>PRESS START</h2>
+    <button onclick="startGame()">START</button>
 </div>
 
-<p id="score">SCORE: 0</p>
+<!-- ゲーム画面 -->
+<div id="gameScreen" style="display:none;">
+    <p>← → 移動 / ↑ 回転 / ↓ 加速 / Space ハードドロップ / C HOLD</p>
+
+    <div id="container">
+        <div class="side">
+            <h3>HOLD</h3>
+            <canvas id="hold" width="120" height="120"></canvas>
+        </div>
+
+        <canvas id="game" width="300" height="600"></canvas>
+
+        <div class="side">
+            <h3>NEXT</h3>
+            <canvas id="next" width="120" height="120"></canvas>
+        </div>
+    </div>
+
+    <p id="score">SCORE: 0</p>
+</div>
 
 <script>
-// =====================
-// 基本設定
-// =====================
 const COLS = 10;
 const ROWS = 20;
 const SIZE = 30;
@@ -66,12 +81,8 @@ const SIZE = 30;
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const holdCanvas = document.getElementById("hold");
-const holdCtx = holdCanvas.getContext("2d");
-
-const nextCanvas = document.getElementById("next");
-const nextCtx = nextCanvas.getContext("2d");
-
+const holdCtx = document.getElementById("hold").getContext("2d");
+const nextCtx = document.getElementById("next").getContext("2d");
 // =====================
 // テトリミノ（正規7種）
 // =====================
@@ -86,18 +97,58 @@ const SHAPES = [
 ];
 
 
-// =====================
 // 状態
+let board, current, next, hold;
+let holdUsed;
+let x, y;
+let score;
+let gameStarted = false;
+
 // =====================
-let board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
+// 初期化
+// =====================
+function resetGame(){
+    board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
+    hold = null;
+    next = randomPiece();
+    holdUsed = false;
+    x = 3;
+    y = 0;
+    score = 0;
+    updateScore();
+}
 
-let current, next, hold = null;
-let holdUsed = false;
+// =====================
+// スコア
+// =====================
+function updateScore(){
+    document.getElementById("score").innerText = "SCORE: " + score;
+}
 
-let x = 3;
-let y = 0;
+// =====================
+// スタート
+// =====================
+function startGame(){
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("gameScreen").style.display = "block";
 
-let score = 0;
+    gameStarted = true;
+    resetGame();
+    spawn();
+}
+
+// =====================
+// ゲームオーバー
+// =====================
+function gameOver(){
+    alert("GAME OVER");
+
+    gameStarted = false;
+
+    // 画面切り替え
+    document.getElementById("gameScreen").style.display = "none";
+    document.getElementById("startScreen").style.display = "block";
+}
 
 // =====================
 // ピース生成
@@ -107,21 +158,20 @@ function randomPiece(){
 }
 
 function spawn(){
-    current = next || randomPiece();
+    current = next;
     next = randomPiece();
+
     x = 3;
     y = 0;
     holdUsed = false;
 
     if(!canMove(x,y,current.shape)){
-        alert("GAME OVER");
-        board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
-        score = 0;
+        gameOver();
     }
 }
 
 // =====================
-// 移動判定
+// 判定
 // =====================
 function canMove(nx,ny,shape){
     return shape.every(([dx,dy])=>{
@@ -136,7 +186,7 @@ function canMove(nx,ny,shape){
 }
 
 // =====================
-// 回転（壁蹴り）
+// 回転
 // =====================
 function rotate(){
     const rotated = current.shape.map(([x,y])=>[-y,x]);
@@ -167,14 +217,26 @@ function freeze(){
 // ライン消去
 // =====================
 function clearLines(){
-    board = board.filter(row=>!row.every(v=>v));
+    let lines = 0;
+
+    board = board.filter(row=>{
+        if(row.every(v=>v)){
+            lines++;
+            return false;
+        }
+        return true;
+    });
 
     while(board.length<ROWS){
         board.unshift(Array(COLS).fill(0));
-        score += 100;
     }
 
-    document.getElementById("score").innerText = "SCORE: " + score;
+    if(lines === 1) score += 100;
+    if(lines === 2) score += 300;
+    if(lines === 3) score += 500;
+    if(lines >= 4) score += 800;
+
+    updateScore();
 }
 
 // =====================
@@ -214,7 +276,6 @@ function holdPiece(){
 function draw(){
     ctx.clearRect(0,0,300,600);
 
-    // board
     for(let r=0;r<ROWS;r++){
         for(let c=0;c<COLS;c++){
             if(board[r][c]){
@@ -224,7 +285,6 @@ function draw(){
         }
     }
 
-    // current
     ctx.fillStyle = current.color;
     current.shape.forEach(([dx,dy])=>{
         ctx.fillRect((x+dx)*SIZE,(y+dy)*SIZE,SIZE,SIZE);
@@ -234,9 +294,6 @@ function draw(){
     drawMini(nextCtx, next);
 }
 
-// =====================
-// ミニ表示
-// =====================
 function drawMini(ctxMini, piece){
     ctxMini.clearRect(0,0,120,120);
     if(!piece) return;
@@ -251,6 +308,8 @@ function drawMini(ctxMini, piece){
 // 操作
 // =====================
 document.addEventListener("keydown",e=>{
+    if(!gameStarted) return;
+
     if(e.key==="ArrowLeft" && canMove(x-1,y,current.shape)) x--;
     if(e.key==="ArrowRight" && canMove(x+1,y,current.shape)) x++;
     if(e.key==="ArrowDown") drop();
@@ -267,9 +326,8 @@ document.addEventListener("keydown",e=>{
 // =====================
 // ループ
 // =====================
-spawn();
-
 setInterval(()=>{
+    if(!gameStarted) return;
     drop();
     draw();
 },500);
