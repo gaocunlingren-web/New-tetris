@@ -22,7 +22,6 @@ body {
     align-items:center;
 }
 
-/* ゲーム画面 */
 #gameScreen {
     flex:1;
     display:flex;
@@ -30,7 +29,6 @@ body {
     align-items:center;
 }
 
-/* メイン配置 */
 #container {
     display:flex;
     justify-content:center;
@@ -38,7 +36,6 @@ body {
     gap:10px;
 }
 
-/* HOLD / NEXT */
 #topPanel {
     display:flex;
     flex-direction:column;
@@ -68,9 +65,8 @@ p {
     font-size:12px;
 }
 
-/* 操作ボタン（最初は非表示） */
+/* ★ ボタン（JSで表示制御） */
 #controls {
-    display:none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -88,7 +84,6 @@ button {
     margin:3px;
 }
 
-/* スマホ */
 @media (max-width: 800px) {
     #container {
         flex-direction: column;
@@ -116,7 +111,7 @@ button {
 
 <div id="container">
 
-
+```
 <div id="topPanel">
     <div>
         <h3>HOLD</h3>
@@ -130,6 +125,7 @@ button {
 </div>
 
 <canvas id="game"></canvas>
+```
 
 </div>
 
@@ -137,9 +133,9 @@ button {
 
 </div>
 
-<!-- ★ 操作ボタン -->
+<!-- ★ 最初は非表示 -->
 
-<div id="controls">
+<div id="controls" style="display:none;">
     <button onclick="moveLeft()">←</button>
     <button onclick="rotatePiece()">⟳</button>
     <button onclick="moveRight()">→</button>
@@ -165,10 +161,12 @@ const nextCtx = nextCanvas.getContext("2d");
 
 /* サイズ計算 */
 function calculateSize(){
-    const maxWidth = window.innerWidth * 0.95;
-    const reservedHeight = 200;
 
-    const maxHeight = window.innerHeight - reservedHeight;
+    const controls = document.getElementById("controls");
+    const controlsHeight = controls.getBoundingClientRect().height || 120;
+
+    const maxWidth = window.innerWidth * 0.95;
+    const maxHeight = window.innerHeight - controlsHeight - 20;
 
     SIZE = Math.floor(Math.min(
         maxWidth / COLS,
@@ -225,17 +223,19 @@ function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
 
-    // ★ ボタン表示
     document.getElementById("controls").style.display = "flex";
 
     gameStarted = true;
     resetGame();
     spawn();
 
+    /* ★ 2フレーム待ってからサイズ確定 */
     requestAnimationFrame(() => {
-        calculateSize();
-        applyCanvasSize();
-        draw();
+        requestAnimationFrame(() => {
+            calculateSize();
+            applyCanvasSize();
+            draw();
+        });
     });
 }
 
@@ -244,11 +244,9 @@ function gameOver(){
 
     gameStarted = false;
 
-    // 画面切り替え
     document.getElementById("gameScreen").style.display = "none";
     document.getElementById("startScreen").style.display = "block";
 
-    // ボタン非表示
     document.getElementById("controls").style.display = "none";
 }
 
@@ -392,6 +390,15 @@ document.addEventListener("keydown",e=>{
     if(e.key==="c") holdPiece();
 });
 
+/* 画面回転対応 */
+window.addEventListener("resize", ()=>{
+    if(!gameStarted) return;
+
+    calculateSize();
+    applyCanvasSize();
+    draw();
+});
+
 setInterval(()=>{
     if(!gameStarted) return;
     drop();
@@ -401,4 +408,3 @@ setInterval(()=>{
 
 </body>
 </html>
-
