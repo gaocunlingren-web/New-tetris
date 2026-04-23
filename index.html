@@ -21,18 +21,20 @@ body {
 #container {
     display:flex;
     justify-content:center;
-    gap:10px;
+    align-items:flex-start;
+    gap:20px;
     margin-top:10px;
+}
+
+/* 上部パネル（HOLD/NEXT） */
+#topPanel {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
 }
 
 canvas {
     background:black;
-}
-
-.side {
-    display:flex;
-    flex-direction:column;
-    gap:10px;
 }
 
 #startScreen {
@@ -47,6 +49,20 @@ button {
 
 #controls {
     margin-top: 10px;
+}
+
+/* スマホ対応 */
+@media (max-width: 600px) {
+    #container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #topPanel {
+        flex-direction: row;
+        justify-content: center;
+        gap: 30px;
+    }
 }
 </style>
 
@@ -66,17 +82,23 @@ button {
 
 ```
 <div id="container">
-    <div class="side">
-        <h3>HOLD</h3>
-        <canvas id="hold"></canvas>
+
+    <!-- HOLD & NEXT -->
+    <div id="topPanel">
+        <div>
+            <h3>HOLD</h3>
+            <canvas id="hold"></canvas>
+        </div>
+
+        <div>
+            <h3>NEXT</h3>
+            <canvas id="next"></canvas>
+        </div>
     </div>
 
+    <!-- ゲーム画面 -->
     <canvas id="game"></canvas>
 
-    <div class="side">
-        <h3>NEXT</h3>
-        <canvas id="next"></canvas>
-    </div>
 </div>
 
 <p id="score">SCORE: 0</p>
@@ -102,12 +124,12 @@ button {
 const COLS = 10;
 const ROWS = 20;
 
-// ★ PC・スマホ両対応サイズ
+// サイズ調整（PC/スマホ）
 let SIZE;
 if(window.innerWidth < 600){
-    SIZE = Math.floor(window.innerWidth / 12); // スマホ
+    SIZE = Math.floor(window.innerWidth / 12);
 } else {
-    SIZE = 30; // PC固定
+    SIZE = 30;
 }
 
 const canvas = document.getElementById("game");
@@ -162,17 +184,15 @@ function startGame(){
     document.getElementById("gameScreen").style.display = "block";
 
     gameStarted = true;
-    resetGame();   // ←これで完全リセット
+    resetGame();
     spawn();
     draw();
 }
 
 function gameOver(){
     alert("GAME OVER");
-
     gameStarted = false;
 
-    // 画面切り替え
     document.getElementById("gameScreen").style.display = "none";
     document.getElementById("startScreen").style.display = "block";
 }
@@ -207,7 +227,6 @@ function canMove(nx,ny,shape){
 
 function rotate(){
     const rotated = current.shape.map(([dx,dy])=>[-dy,dx]);
-
     const kicks = [0,-1,1,-2,2];
 
     for(let k of kicks){
@@ -302,7 +321,7 @@ function drawMini(ctxMini, piece){
     });
 }
 
-// ボタン操作
+// 操作
 function moveLeft(){ if(canMove(x-1,y,current.shape)) x--; draw(); }
 function moveRight(){ if(canMove(x+1,y,current.shape)) x++; draw(); }
 function rotatePiece(){ rotate(); draw(); }
