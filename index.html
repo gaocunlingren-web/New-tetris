@@ -68,7 +68,7 @@ p {
     font-size:12px;
 }
 
-/* ★ ボタン固定（重要） */
+/* ★ ボタン固定 */
 #controls {
     position: fixed;
     bottom: 0;
@@ -79,6 +79,7 @@ p {
     flex-wrap:wrap;
     justify-content:center;
     padding:5px 0;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 button {
@@ -137,7 +138,7 @@ button {
 
 </div>
 
-<!-- ★ 常に表示される操作ボタン -->
+<!-- 操作ボタン -->
 
 <div id="controls">
     <button onclick="moveLeft()">←</button>
@@ -163,12 +164,14 @@ const holdCtx = holdCanvas.getContext("2d");
 const nextCanvas = document.getElementById("next");
 const nextCtx = nextCanvas.getContext("2d");
 
-/* サイズ計算 */
+/* ★ サイズ計算（ボタン分を引く） */
 function calculateSize(){
-    const maxWidth = window.innerWidth * 0.95;
 
-    // ★ ボタン分を最初から引く
-    const maxHeight = window.innerHeight - 180;
+    const controls = document.getElementById("controls");
+    const controlsHeight = controls.getBoundingClientRect().height;
+
+    const maxWidth = window.innerWidth * 0.95;
+    const maxHeight = window.innerHeight - controlsHeight - 20;
 
     SIZE = Math.floor(Math.min(
         maxWidth / COLS,
@@ -225,13 +228,16 @@ function startGame(){
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "flex";
 
-    calculateSize();
-    applyCanvasSize();
-
     gameStarted = true;
     resetGame();
     spawn();
-    draw();
+
+    /* ★ 描画後にサイズ確定 */
+    requestAnimationFrame(() => {
+        calculateSize();
+        applyCanvasSize();
+        draw();
+    });
 }
 
 function gameOver(){
