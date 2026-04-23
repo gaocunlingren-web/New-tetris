@@ -13,7 +13,6 @@ html, body {
     margin: 0;
     overflow: hidden;
 
-    /* ★ズーム防止の基本 */
     touch-action: manipulation;
     -webkit-user-select: none;
     user-select: none;
@@ -36,8 +35,8 @@ body {
     flex-direction:column;
     justify-content:center;
     align-items:center;
-    width: 100%;
-    height: 100vh;
+    width:100%;
+    height:100vh;
 }
 
 #container {
@@ -74,12 +73,11 @@ p {
     font-size:12px;
 }
 
-/* ★操作ボタン（ズーム防止） */
 #controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+    position:fixed;
+    bottom:0;
+    left:0;
+    width:100%;
     background:#111;
     display:none;
     flex-wrap:wrap;
@@ -93,21 +91,8 @@ button {
     padding:8px;
     margin:3px;
 
-    /* ★ズーム・誤反応防止 */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-}
-
-@media (max-width: 800px) {
-    #container {
-        flex-direction: column;
-    }
-
-    #topPanel {
-        flex-direction: row;
-        justify-content: space-around;
-        width: 100%;
-    }
 }
 </style>
 </head>
@@ -154,68 +139,62 @@ button {
 </div>
 
 <script>
-/* ===== ズーム完全防止（重要） ===== */
-document.addEventListener("touchstart", function(e){
-    if (e.touches.length > 1) {
-        e.preventDefault();
-    }
-}, { passive:false });
 
-document.addEventListener("gesturestart", function(e){
+/* ===== ズーム防止 ===== */
+document.addEventListener("touchstart",e=>{
+    if(e.touches.length>1) e.preventDefault();
+},{passive:false});
+
+document.addEventListener("gesturestart",e=>{
     e.preventDefault();
 });
 
-/* ===== ゲーム設定 ===== */
-const COLS = 10;
-const ROWS = 20;
+const COLS=10;
+const ROWS=20;
 
-let SIZE = 20;
+let SIZE=20;
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-const holdCanvas = document.getElementById("hold");
-const holdCtx = holdCanvas.getContext("2d");
+const holdCanvas=document.getElementById("hold");
+const holdCtx=holdCanvas.getContext("2d");
 
-const nextCanvas = document.getElementById("next");
-const nextCtx = nextCanvas.getContext("2d");
+const nextCanvas=document.getElementById("next");
+const nextCtx=nextCanvas.getContext("2d");
 
+/* ===== サイズ ===== */
 function getVH(){
-    return Math.min(window.innerHeight, document.documentElement.clientHeight);
+    return Math.min(window.innerHeight,document.documentElement.clientHeight);
 }
 
 function calculateSize(){
+    const usedHeight=200;
 
-    const controlsHeight = 120;
-    const headerHeight = 40;
-    const scoreHeight = 30;
+    const vh=getVH();
+    const maxWidth=window.innerWidth*0.95;
+    const maxHeight=vh-usedHeight;
 
-    const usedHeight = controlsHeight + headerHeight + scoreHeight + 40;
-
-    const vh = getVH();
-    const maxWidth = window.innerWidth * 0.95;
-    const maxHeight = vh - usedHeight;
-
-    SIZE = Math.floor(Math.min(
-        maxWidth / COLS,
-        maxHeight / ROWS
+    SIZE=Math.floor(Math.min(
+        maxWidth/COLS,
+        maxHeight/ROWS
     ));
 
-    SIZE = Math.max(12, SIZE);
+    SIZE=Math.max(12,SIZE);
 }
 
 function applyCanvasSize(){
-    canvas.width = SIZE * COLS;
-    canvas.height = SIZE * ROWS;
+    canvas.width=SIZE*COLS;
+    canvas.height=SIZE*ROWS;
 
-    canvas.style.width = (SIZE * COLS) + "px";
-    canvas.style.height = (SIZE * ROWS) + "px";
+    canvas.style.width=(SIZE*COLS)+"px";
+    canvas.style.height=(SIZE*ROWS)+"px";
 
-    holdCanvas.width = SIZE * 4;
-    holdCanvas.height = SIZE * 4;
+    holdCanvas.width=SIZE*4;
+    holdCanvas.height=SIZE*4;
 
-    nextCanvas.width = SIZE * 4;
-    nextCanvas.height = SIZE * 4;
+    nextCanvas.width=SIZE*4;
+    nextCanvas.height=SIZE*4;
 }
 
 /* ===== ゲーム本体 ===== */
@@ -229,52 +208,65 @@ const SHAPES = [
     {shape:[[0,0],[1,0],[1,1],[2,1],[2,2]], color:"red"}
 ];
 
-let board, current, next, hold;
+let board,current,next,hold;
 let holdUsed;
-let x, y;
+let x,y;
 let score;
-let gameStarted = false;
+let gameStarted=false;
 
-function updateScore(){
-    document.getElementById("score").innerText = "SCORE: " + score;
+/* ===== 回転 ===== */
+function rotate(){
+    const rotated=current.shape.map(([dx,dy])=>[-dy,dx]);
+    const kicks=[0,-1,1,-2,2];
+
+    for(let k of kicks){
+        if(canMove(x+k,y,rotated)){
+            current.shape=rotated;
+            x+=k;
+            return;
+        }
+    }
 }
 
+/* ===== ゲーム ===== */
 function resetGame(){
-    board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
-    hold = null;
-    next = randomPiece();
-    holdUsed = false;
-    x = 3;
-    y = 0;
-    score = 0;
+    board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+    hold=null;
+    next=randomPiece();
+    holdUsed=false;
+    x=3;
+    y=0;
+    score=0;
     updateScore();
 }
 
-function startGame(){
-    document.getElementById("startScreen").style.display = "none";
-    document.getElementById("gameScreen").style.display = "flex";
-    document.getElementById("controls").style.display = "flex";
+function updateScore(){
+    document.getElementById("score").innerText="SCORE: "+score;
+}
 
-    gameStarted = true;
+function startGame(){
+    document.getElementById("startScreen").style.display="none";
+    document.getElementById("gameScreen").style.display="flex";
+    document.getElementById("controls").style.display="flex";
+
+    gameStarted=true;
     resetGame();
     spawn();
 
     requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-            calculateSize();
-            applyCanvasSize();
-            draw();
-        });
+        calculateSize();
+        applyCanvasSize();
+        draw();
     });
 }
 
 function gameOver(){
     alert("GAME OVER");
+    gameStarted=false;
 
-    gameStarted = false;
-    document.getElementById("gameScreen").style.display = "none";
-    document.getElementById("startScreen").style.display = "block";
-    document.getElementById("controls").style.display = "none";
+    document.getElementById("startScreen").style.display="block";
+    document.getElementById("gameScreen").style.display="none";
+    document.getElementById("controls").style.display="none";
 }
 
 function randomPiece(){
@@ -282,32 +274,30 @@ function randomPiece(){
 }
 
 function spawn(){
-    current = next;
-    next = randomPiece();
+    current=next;
+    next=randomPiece();
 
-    x = 3;
-    y = 0;
-    holdUsed = false;
+    x=3;
+    y=0;
+    holdUsed=false;
 
-    if(!canMove(x,y,current.shape)){
-        gameOver();
-    }
+    if(!canMove(x,y,current.shape)) gameOver();
 }
 
 function canMove(nx,ny,shape){
     return shape.every(([dx,dy])=>{
-        let px = nx+dx;
-        let py = ny+dy;
+        let px=nx+dx;
+        let py=ny+dy;
 
-        if(px<0 || px>=COLS || py>=ROWS) return false;
-        if(py>=0 && board[py][px]) return false;
+        if(px<0||px>=COLS||py>=ROWS) return false;
+        if(py>=0&&board[py][px]) return false;
         return true;
     });
 }
 
 function freeze(){
     current.shape.forEach(([dx,dy])=>{
-        board[y+dy][x+dx] = current.color;
+        board[y+dy][x+dx]=current.color;
     });
 
     clearLines();
@@ -315,10 +305,10 @@ function freeze(){
 }
 
 function clearLines(){
-    let lines = 0;
+    let lines=0;
 
-    board = board.filter(row=>{
-        if(row.every(v=>v)){
+    board=board.filter(r=>{
+        if(r.every(v=>v)){
             lines++;
             return false;
         }
@@ -329,16 +319,30 @@ function clearLines(){
         board.unshift(Array(COLS).fill(0));
     }
 
-    score += lines * 100;
+    score+=lines*100;
     updateScore();
 }
 
 function drop(){
-    if(canMove(x,y+1,current.shape)){
-        y++;
-    } else {
-        freeze();
+    if(canMove(x,y+1,current.shape)) y++;
+    else freeze();
+}
+
+/* ===== ホールド ===== */
+function holdPiece(){
+    if(holdUsed) return;
+
+    if(hold===null){
+        hold=current;
+        spawn();
+    }else{
+        [current,hold]=[hold,current];
+        x=3;
+        y=0;
     }
+
+    holdUsed=true;
+    draw();
 }
 
 /* ===== 描画 ===== */
@@ -348,27 +352,45 @@ function draw(){
     for(let r=0;r<ROWS;r++){
         for(let c=0;c<COLS;c++){
             if(board[r][c]){
-                ctx.fillStyle = board[r][c];
+                ctx.fillStyle=board[r][c];
                 ctx.fillRect(c*SIZE,r*SIZE,SIZE,SIZE);
             }
         }
     }
 
-    ctx.fillStyle = current.color;
+    ctx.fillStyle=current.color;
     current.shape.forEach(([dx,dy])=>{
         ctx.fillRect((x+dx)*SIZE,(y+dy)*SIZE,SIZE,SIZE);
+    });
+
+    drawMini(holdCtx,hold,holdCanvas);
+    drawMini(nextCtx,next,nextCanvas);
+}
+
+function drawMini(ctxMini,piece,canvasMini){
+    ctxMini.clearRect(0,0,canvasMini.width,canvasMini.height);
+    if(!piece) return;
+
+    ctxMini.fillStyle=piece.color;
+
+    piece.shape.forEach(([x,y])=>{
+        ctxMini.fillRect(
+            x*SIZE/2 + SIZE,
+            y*SIZE/2 + SIZE,
+            SIZE/2,
+            SIZE/2
+        );
     });
 }
 
 /* ===== 操作 ===== */
 function moveLeft(){ if(canMove(x-1,y,current.shape)) x--; draw(); }
 function moveRight(){ if(canMove(x+1,y,current.shape)) x++; draw(); }
-function rotatePiece(){ draw(); }
+function rotatePiece(){ rotate(); draw(); }
 function dropPiece(){ drop(); draw(); }
 function hardDrop(){ while(canMove(x,y+1,current.shape)) y++; freeze(); draw(); }
-function holdPiece(){}
 
-/* ===== キー操作 ===== */
+/* ===== キーボード（★ここが追加修正） ===== */
 document.addEventListener("keydown",e=>{
     if(!gameStarted) return;
 
@@ -377,11 +399,15 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown") dropPiece();
     if(e.key==="ArrowUp") rotatePiece();
     if(e.code==="Space") hardDrop();
+
+    // ★ホールド追加（ここ重要）
+    if(e.key==="c" || e.key==="C" || e.key==="h" || e.key==="H") holdPiece();
 });
 
-/* ===== resize対応 ===== */
-window.addEventListener("resize", ()=>{
+/* ===== resize ===== */
+window.addEventListener("resize",()=>{
     if(!gameStarted) return;
+
     calculateSize();
     applyCanvasSize();
     draw();
