@@ -16,6 +16,7 @@ body {
     display:flex;
     flex-direction:column;
     align-items:center;
+    overflow:hidden; /* スクロール防止 */
 }
 
 #container {
@@ -26,7 +27,7 @@ body {
     margin-top:10px;
 }
 
-/* 上部パネル（HOLD/NEXT） */
+/* HOLD & NEXT */
 #topPanel {
     display:flex;
     flex-direction:column;
@@ -35,6 +36,8 @@ body {
 
 canvas {
     background:black;
+    max-width:100%;
+    height:auto;
 }
 
 #startScreen {
@@ -51,13 +54,6 @@ button {
     margin-top: 10px;
 }
 
-/* デフォルト（PC） */
-#topPanel {
-    display:flex;
-    flex-direction: column;
-    gap:20px;
-}
-
 /* スマホ */
 @media (max-width: 800px) {
     #container {
@@ -71,7 +67,6 @@ button {
         gap: 30px;
     }
 }
-
 </style>
 
 </head>
@@ -91,7 +86,7 @@ button {
 ```
 <div id="container">
 
-    <!-- HOLD & NEXT -->
+    <!-- HOLD / NEXT -->
     <div id="topPanel">
         <div>
             <h3>HOLD</h3>
@@ -104,7 +99,7 @@ button {
         </div>
     </div>
 
-    <!-- ゲーム画面 -->
+    <!-- ゲーム -->
     <canvas id="game"></canvas>
 
 </div>
@@ -132,13 +127,15 @@ button {
 const COLS = 10;
 const ROWS = 20;
 
-// サイズ調整（PC/スマホ）
-let SIZE;
-if(window.innerWidth < 600){
-    SIZE = Math.floor(window.innerWidth / 12);
-} else {
-    SIZE = 30;
-}
+// ★ 横＆縦どちらにも収まるサイズ
+const maxWidth = window.innerWidth * 0.9;
+const maxHeight = window.innerHeight * 0.7;
+
+const SIZE = Math.min(
+    Math.floor(maxWidth / COLS),
+    Math.floor(maxHeight / ROWS),
+    30
+);
 
 const canvas = document.getElementById("game");
 canvas.width = SIZE * COLS;
