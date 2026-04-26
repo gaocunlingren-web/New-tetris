@@ -323,6 +323,16 @@ function clearLines(){
     updateScore();
 }
 
+function getGhostY() {
+    let ghostY = y;
+
+    while (canMove(x, ghostY + 1, current.shape)) {
+        ghostY++;
+    }
+
+    return ghostY;
+}
+
 function drop(){
     if(canMove(x,y+1,current.shape)) y++;
     else freeze();
@@ -349,6 +359,7 @@ function holdPiece(){
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
+    // ===== 盤面 =====
     for(let r=0;r<ROWS;r++){
         for(let c=0;c<COLS;c++){
             if(board[r][c]){
@@ -358,11 +369,31 @@ function draw(){
         }
     }
 
+    // ===== ゴーストピース =====
+    const ghostY = getGhostY();
+
+    ctx.globalAlpha = 0.3; // 透明にする
+    ctx.fillStyle = current.color;
+
+    current.shape.forEach(([dx, dy]) => {
+        ctx.fillRect(
+            (x + dx) * SIZE,
+            (ghostY + dy) * SIZE,
+            SIZE,
+            SIZE
+        );
+    });
+
+    ctx.globalAlpha = 1.0; // 元に戻す
+
+
+    // ===== 現在のミノ =====
     ctx.fillStyle=current.color;
     current.shape.forEach(([dx,dy])=>{
         ctx.fillRect((x+dx)*SIZE,(y+dy)*SIZE,SIZE,SIZE);
     });
 
+    // ===== ミニ表示 =====
     drawMini(holdCtx,hold,holdCanvas);
     drawMini(nextCtx,next,nextCanvas);
 }
@@ -390,7 +421,7 @@ function rotatePiece(){ rotate(); draw(); }
 function dropPiece(){ drop(); draw(); }
 function hardDrop(){ while(canMove(x,y+1,current.shape)) y++; freeze(); draw(); }
 
-/* ===== キーボード（★ここが追加修正） ===== */
+/* ===== キーボード ===== */
 document.addEventListener("keydown",e=>{
     if(!gameStarted) return;
 
@@ -400,7 +431,7 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowUp") rotatePiece();
     if(e.code==="Space") hardDrop();
 
-    // ★ホールド追加（ここ重要）
+    // ★ホールド追加
     if(e.key==="c" || e.key==="C" || e.key==="h" || e.key==="H") holdPiece();
 });
 
@@ -420,7 +451,61 @@ setInterval(()=>{
     draw();
 },500);
 
+/* ===== スワイプ操作 ===== */
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+const SWIPE_THRESHOLD = 20;
+
+canvas.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+
+    // 初期化（重要）
+    touchEndX = touchStartX;
+    touchEndY = touchStartY;
+});
+
+canvas.addEventListener("touchmove", e => {
+    const t = e.touches[0];
+    touchEndX = t.clientX;
+    touchEndY = t.clientY;
+});
+
+canvas.addEventListener("touchend", () => {
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    // 横スワイプ
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > SWIPE_THRESHOLD) {
+            moveRight();
+        } else if (dx < -SWIPE_THRESHOLD) {
+            moveLeft();
+        }
+    }
+    // 縦スワイプ
+    else {
+        if (dy > SWIPE_THRESHOLD) {
+            hardDrop();      // ↓ 下スワイプ：ハードドロップ
+        } else if (dy < -SWIPE_THRESHOLD) {
+            holdPiece();     // ↑ 上スワイプ：ホールド
+        }
+    }
+
+    // タップ（ほぼ動いていない）
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        rotatePiece();
+    }
+
+    draw();
+});
+
 </script>
 
 </body>
 </html>
+
