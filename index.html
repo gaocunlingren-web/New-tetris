@@ -517,8 +517,9 @@ let lastTap = 0;
 canvas.addEventListener("touchend", e => {
     const now = Date.now();
 
-    if (now - lastTap < 300) {
-        e.preventDefault(); // ズーム完全防止
+    // ★ズーム防止はcanvas上だけに限定
+    if (now - lastTap < 300 && e.target.tagName === "CANVAS") {
+        e.preventDefault();
     }
 
     lastTap = now;
