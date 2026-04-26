@@ -512,21 +512,21 @@ canvas.addEventListener("touchmove", e => {
     draw();
 }, { passive: false });
 
+let lastTap = 0;
+
 canvas.addEventListener("touchend", e => {
-
-    // ダブルタップ防止
     const now = Date.now();
-    if (now - lastTouchTime < 300) {
-        e.preventDefault();
-    }
-    lastTouchTime = now;
 
-    // タップだけ回転
+    if (now - lastTap < 300) {
+        e.preventDefault(); // ズーム完全防止
+    }
+
+    lastTap = now;
+
     if (!moved) {
         rotatePiece();
         draw();
     }
-
 }, { passive: false });
 
 </script>
