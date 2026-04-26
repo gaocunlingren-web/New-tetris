@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" 
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <title>テトリス改</title>
 
@@ -13,7 +14,7 @@ html, body {
     margin: 0;
     overflow: hidden;
 
-    touch-action: manipulation;
+    touch-action: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -473,10 +474,8 @@ canvas.addEventListener("touchstart", e => {
 canvas.addEventListener("touchmove", e => {
     e.preventDefault();
 
+    if (actionDone) return;
 
-    // 縦操作は1回だけ
-    if (!actionDone) {
-    
     const t = e.touches[0];
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
@@ -489,7 +488,6 @@ canvas.addEventListener("touchmove", e => {
         touchStartX = t.clientX;
         moved = true;
     }
-
 
         // 下（ハードドロップ）
         if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
