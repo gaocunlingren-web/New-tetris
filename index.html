@@ -470,10 +470,16 @@ canvas.addEventListener("touchstart", e => {
 });
 
 canvas.addEventListener("touchmove", e => {
+    e.preventDefault();
+
     const t = e.touches[0];
     touchEndX = t.clientX;
     touchEndY = t.clientY;
-});
+
+    touchEndX = touchStartX;
+    touchEndY = touchStartY;
+}, { passive: false });
+
 
 canvas.addEventListener("touchend", () => {
     const dx = touchEndX - touchStartX;
