@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 
-<meta name="viewport" 
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
 
 <title>テトリス改</title>
 
@@ -463,6 +462,7 @@ let actionDone = false; // ★追加
 const SWIPE_THRESHOLD = 20;
 
 canvas.addEventListener("touchstart", e => {
+    e.preventDefault();
     const t = e.touches[0];
     touchStartX = t.clientX;
     touchStartY = t.clientY;
@@ -489,45 +489,46 @@ canvas.addEventListener("touchmove", e => {
         moved = true;
     }
 
-        // 下（ハードドロップ）
-        if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
-            hardDrop();
-            moved = true;
-            actionDone = true;
 
-            return;
+    // 下（ハードドロップ）
+    if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
+        hardDrop();
+        moved = true;
+        actionDone = true;
 
-        }
+        return;
 
-        // 上（ホールド）
-        else if (Math.abs(dy) > Math.abs(dx) && dy < -SWIPE_THRESHOLD * 2) {
-            holdPiece();
-            moved = true;
-            actionDone = true;
+    }
 
-            return;
-        }
+    // 上（ホールド）
+    else if (Math.abs(dy) > Math.abs(dx) && dy < -SWIPE_THRESHOLD * 2) {
+        holdPiece();
+        moved = true;
+        actionDone = true;
+
+        return;
     }
 
     draw();
 }, { passive: false });
 
-let lastTap = 0;
-
 canvas.addEventListener("touchend", e => {
-    const now = Date.now();
 
-    // ★ズーム防止はcanvas上だけに限定
-    if (now - lastTap < 300 && e.target.tagName === "CANVAS") {
+    actionDone = true
+
+    // ダブルタップ防止
+    const now = Date.now();
+    if (now - lastTouchTime < 300) {
         e.preventDefault();
     }
+    lastTouchTime = now;
 
-    lastTap = now;
-
+    // タップだけ回転
     if (!moved) {
         rotatePiece();
         draw();
     }
+
 }, { passive: false });
 
 </script>
