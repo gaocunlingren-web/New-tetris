@@ -468,7 +468,7 @@ canvas.addEventListener("touchstart", e => {
     touchStartY = t.clientY;
 
     moved = false;
-}, { passive: false });
+}, { passive: true });
 
 canvas.addEventListener("touchmove", e => {
     e.preventDefault();
@@ -478,7 +478,7 @@ canvas.addEventListener("touchmove", e => {
     const dy = t.clientY - touchStartY;
 
     // 横移動
-    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
         if (dx > 0) moveRight();
         else moveLeft();
 
@@ -487,13 +487,13 @@ canvas.addEventListener("touchmove", e => {
     }
 
     // 下（ハードドロップ）
-    if (dy > SWIPE_THRESHOLD * 2) {
+    if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
         hardDrop();
         moved = true;
     }
 
     // 上（ホールド）
-    if (dy < -SWIPE_THRESHOLD * 2) {
+    if (Math.abs(dy) > Math.abs(dx) && dy < -SWIPE_THRESHOLD * 2) {
         holdPiece();
         moved = true;
     }
