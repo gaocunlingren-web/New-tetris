@@ -61,6 +61,7 @@ body {
 canvas {
     background:black;
     display:block;
+    touch-action: none;
 }
 
 h1 {
@@ -480,7 +481,6 @@ canvas.addEventListener("touchmove", e => {
     touchEndY = touchStartY;
 }, { passive: false });
 
-
 canvas.addEventListener("touchend", () => {
     const dx = touchEndX - touchStartX;
     const dy = touchEndY - touchStartY;
@@ -510,8 +510,39 @@ canvas.addEventListener("touchend", () => {
     draw();
 });
 
+/* ===== ダブルタップズーム防止 ===== */
+let lastTouchTime = 0;
+
+canvas.addEventListener("touchend", (e) => {
+
+    // ===== ダブルタップ防止 =====
+    const now = new Date().getTime();
+    if (now - lastTouchTime < 300) {
+        e.preventDefault();
+    }
+    lastTouchTime = now;
+
+    // ===== 元の処理 =====
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > SWIPE_THRESHOLD) moveRight();
+        else if (dx < -SWIPE_THRESHOLD) moveLeft();
+    } else {
+        if (dy > SWIPE_THRESHOLD) hardDrop();
+        else if (dy < -SWIPE_THRESHOLD) holdPiece();
+    }
+
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        rotatePiece();
+    }
+
+    draw();
+
+}, { passive: false });
+
 </script>
 
 </body>
 </html>
-
