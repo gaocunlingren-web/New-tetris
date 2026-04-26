@@ -473,6 +473,10 @@ canvas.addEventListener("touchstart", e => {
 canvas.addEventListener("touchmove", e => {
     e.preventDefault();
 
+
+    // 縦操作は1回だけ
+    if (!actionDone) {
+    
     const t = e.touches[0];
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
@@ -486,8 +490,6 @@ canvas.addEventListener("touchmove", e => {
         moved = true;
     }
 
-    // 縦操作は1回だけ
-    if (!actionDone) {
 
         // 下（ハードドロップ）
         if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
