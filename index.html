@@ -455,8 +455,10 @@ setInterval(()=>{
 /* ===== スワイプ操作 ===== */
 let touchStartX = 0;
 let touchStartY = 0;
+let moved = false;
+let lastTouchTime = 0;
 
-const SWIPE_THRESHOLD = 15;
+const SWIPE_THRESHOLD = 20;
 
 canvas.addEventListener("touchstart", e => {
     e.preventDefault();
@@ -464,6 +466,8 @@ canvas.addEventListener("touchstart", e => {
     const t = e.touches[0];
     touchStartX = t.clientX;
     touchStartY = t.clientY;
+
+    moved = false;
 }, { passive: false });
 
 canvas.addEventListener("touchmove", e => {
@@ -473,67 +477,47 @@ canvas.addEventListener("touchmove", e => {
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
 
-    // 横移動（リアルタイム）
+    // 横移動
     if (Math.abs(dx) > SWIPE_THRESHOLD) {
         if (dx > 0) moveRight();
         else moveLeft();
 
-        touchStartX = t.clientX; // ★リセット（重要）
+        touchStartX = t.clientX;
+        moved = true;
     }
 
-    // 下スワイプ（ハードドロップ）
+    // 下（ハードドロップ）
     if (dy > SWIPE_THRESHOLD * 2) {
         hardDrop();
-        touchStartY = t.clientY;
+        moved = true;
     }
 
-    // 上スワイプ（ホールド）
+    // 上（ホールド）
     if (dy < -SWIPE_THRESHOLD * 2) {
         holdPiece();
-        touchStartY = t.clientY;
+        moved = true;
     }
 
     draw();
 }, { passive: false });
 
 canvas.addEventListener("touchend", e => {
-    // タップ判定（ほぼ動いてない）
-    rotatePiece();
-    draw();
-});
-    
-/* ===== ダブルタップズーム防止 ===== */
-let lastTouchTime = 0;
 
-canvas.addEventListener("touchend", (e) => {
-
-    // ===== ダブルタップ防止 =====
-    const now = new Date().getTime();
+    // ダブルタップ防止
+    const now = Date.now();
     if (now - lastTouchTime < 300) {
         e.preventDefault();
     }
     lastTouchTime = now;
 
-    // ===== 元の処理 =====
-    const dx = touchEndX - touchStartX;
-    const dy = touchEndY - touchStartY;
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > SWIPE_THRESHOLD) moveRight();
-        else if (dx < -SWIPE_THRESHOLD) moveLeft();
-    } else {
-        if (dy > SWIPE_THRESHOLD) hardDrop();
-        else if (dy < -SWIPE_THRESHOLD) holdPiece();
-    }
-
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+    // タップだけ回転
+    if (!moved) {
         rotatePiece();
+        draw();
     }
-
-    draw();
 
 }, { passive: false });
-
+    
 </script>
 
 </body>
