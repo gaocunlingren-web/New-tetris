@@ -457,17 +457,17 @@ let touchStartX = 0;
 let touchStartY = 0;
 let moved = false;
 let lastTouchTime = 0;
+let actionDone = false; // ★追加
 
 const SWIPE_THRESHOLD = 20;
 
 canvas.addEventListener("touchstart", e => {
-    e.preventDefault();
-
     const t = e.touches[0];
     touchStartX = t.clientX;
     touchStartY = t.clientY;
 
     moved = false;
+    actionDone = false; // ★追加
 }, { passive: true });
 
 canvas.addEventListener("touchmove", e => {
@@ -477,7 +477,7 @@ canvas.addEventListener("touchmove", e => {
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
 
-    // 横移動
+    // 横移動（←これは制限しない）
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
         if (dx > 0) moveRight();
         else moveLeft();
@@ -486,16 +486,27 @@ canvas.addEventListener("touchmove", e => {
         moved = true;
     }
 
-    // 下（ハードドロップ）
-    if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
-        hardDrop();
-        moved = true;
-    }
+    // 縦操作は1回だけ
+    if (!actionDone) {
 
-    // 上（ホールド）
-    if (Math.abs(dy) > Math.abs(dx) && dy < -SWIPE_THRESHOLD * 2) {
-        holdPiece();
-        moved = true;
+        // 下（ハードドロップ）
+        if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD * 2) {
+            hardDrop();
+            moved = true;
+            actionDone = true;
+
+            return;
+
+        }
+
+        // 上（ホールド）
+        else if (Math.abs(dy) > Math.abs(dx) && dy < -SWIPE_THRESHOLD * 2) {
+            holdPiece();
+            moved = true;
+            actionDone = true;
+
+            return;
+        }
     }
 
     draw();
@@ -517,7 +528,7 @@ canvas.addEventListener("touchend", e => {
     }
 
 }, { passive: false });
-    
+
 </script>
 
 </body>
